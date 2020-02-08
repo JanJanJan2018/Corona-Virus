@@ -1,0 +1,153 @@
+---
+title: "CoV liver and capillary samples"
+author: "Janis Corona"
+date: "2/8/2020"
+output:
+  word_document: default
+  html_document: default
+---
+
+These samples are the headers added from three Gene Expression Omnibus studies at 
+
+- ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE89166
+- ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE89160
+- ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE100509
+
+The first two studies are part of the same study that used human liver tumor samples in vitro to compare the effects of the coronavirus over time. The third study used human microvascular blood capillaries in vitro to study the effects of the coronavirus over time.
+
+In the first two studies that used the liver tumor samples to examine the effects of the coronavirus in vitro, there were four groups inoculated or treated with the active coronavirus and four groups not inoculated with the active coranavirus, and two samples that were treated with heat inactivated coronavirus, and two samples that were treated with active coronavirus and IL-1alpha to see the gene expression changes over one hour's time. 
+
+In the the third study that used blood capillaries, there were five samples followed over a 0,12,24,36, and 48 hour time intervals in groups A,B,C,D, and E that compared the time interval values of screening for changes in microarray analysis with a mock group of the same. 
+
+This following data is the data of all genes in common between these three studies, cleaned to remove missing values and with the attached gene symbols from the GEO platform for the probe IDs.
+```{r}
+both <- read.csv('both_clean_liver_capillary_CoV.csv', sep=',', header=TRUE, 
+                 na.strings=c('',' '))
+
+```
+
+```{r}
+dim(both)
+```
+
+
+```{r}
+colnames(both)
+
+```
+***
+***
+
+Lets group the samples that are our columns with descriptive and GEO ID names into their respective groups, get the fold change between the controls from those groups, attach to the original data table, both, as a different names, then order by the genes that have the most fold change then the least fold change. Take the first 100 genes from both lists, combine into one table of 200 genes and the samples with their fold change values ordered, make into a transposed data frame so that the samples are the rows, the stats removed, and the 200 genes are the header columns to save as a machine learning ready file.
+
+***
+***
+
+Liver tumor study control and CoV treated. Also, the IL-alpha treated and the inactive CoV treated tables are in this code block.
+```{r}
+names <- both$GENE_SYMBOL
+
+liverCtrl <- both[,c(6:9)]
+row.names(liverCtrl) <- names
+
+liverCoV <- both[,c(2:5)]
+row.names(liverCoV) <- names
+
+liverIL <- both[,10:11]
+row.names(liverIL) <- names
+
+liverIACoV <- both[,12:13]
+row.names(liverIACoV) <- names   
+
+```
+
+Get the row means of those liver samples groups each.
+```{r}
+liverCtrl$CtrlMeanLvr <- rowMeans(liverCtrl)
+liverCoV$CoVMeanLvr <- rowMeans(liverCoV)
+liverIL$ILMeanLvr <- rowMeans(liverIL)
+liverIACoV$IACoVMeanLvr <- rowMeans(liverIACoV)
+
+```
+
+Get the fold change values of those states as a ratio to the control group values.
+```{r}
+fold1 <- as.data.frame(cbind(liverCtrl$CtrlMeanLvr,liverCoV$CoVMeanLvr,liverIL$ILMeanLvr,
+               liverIACoV$IACoVMeanLvr))
+row.names(fold1) <- names
+colnames(fold1) <- c('CtrlMeanLvr','CoVMeanLvr','ILMeanLvr','IACoVMeanLvr')
+
+fold1$FC_CoV <- fold1$CoVMeanLvr/fold1$CtrlMeanLvr
+fold1$FC_IL <- fold1$ILMeanLvr/fold1$CtrlMeanLvr
+fold1$FC_IACov <- fold1$IACoVMeanLvr/fold1$CtrlMeanLvr
+
+```
+
+Most expressed in liver samples by fold change of the Coronavirus, inactive CoronaVirus, and the IL-alpha treated Coronavirus as tables.
+```{r}
+mostCoV <- fold1[order(fold1$FC_CoV, decreasing = TRUE)[0:100],]
+mostIL <- fold1[order(fold1$FC_IL, decreasing = TRUE)[0:100],]
+mostIACoV <- fold1[order(fold1$FC_IACov, decreasing = TRUE)[0:100],]
+
+```
+
+Least expressed in liver samples by fold change of the Coronavirus, inactive CoronaVirus, and the IL-alpha treated Coronavirus as tables.
+```{r}
+leastCoV <- fold1[order(fold1$FC_CoV, decreasing = FALSE)[0:100],]
+leastIL <- fold1[order(fold1$FC_IL, decreasing = FALSE)[0:100],]
+leastIACoV <- fold1[order(fold1$FC_IACov, decreasing = FALSE)[0:100],]
+
+
+```
+
+Gene Expressions with most changes in the liver samples.
+```{r}
+changes <- rbind(mostCoV,mostIL,mostIACoV,leastCoV,leastIL,leastIACoV)
+Changes <- changes[!duplicated(row.names(changes)),]
+length(unique(row.names(Changes)))
+```
+
+Combine this to the samples data for the liver tumor group.
+```{r}
+Changes$Gene <- row.names(Changes)
+combined1 <- merge(both, Changes, by.x='GENE_SYMBOL', by.y='Gene')
+CombinedLiver <- combined1[c(0:100,354:453),]
+```
+
+Machine Learning data for liver samples with 200 genes in the group of most gene expression changes.
+```{r}
+names1 <- CombinedLiver$GENE_SYMBOL
+names2 <- colnames(CombinedLiver)
+row.names(CombinedLiver) <- names1
+
+Combo_lvr_ML <- as.data.frame(t(CombinedLiver))
+
+colnames(Combo_lvr_ML) <- gsub('-','_',colnames(Combo_lvr_ML))
+Combo1 <- Combo_lvr_ML[c(2:63),] #remove stats of fold change values and gene symbol row
+
+```
+
+Write this ML ready file to csv.
+```{r}
+write.csv(Combo1, 'ML_ready_CoV.csv', row.names=TRUE)
+
+```
+
+
+```{r}
+
+
+```
+
+
+```{r}
+
+
+```
+
+
+```{r}
+
+
+```
+
