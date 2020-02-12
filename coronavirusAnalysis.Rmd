@@ -532,10 +532,36 @@ The above table shows the five genes that had the highest count and then the gen
 It would be interesting to analyze those sequences of copy number variations within the top 5 genes expressed the most number of times in this data. Comparing networks of genes associated with processes in the body like immune response, pathogenesis of disease onset, networks of human processes in the body associated with cancer or subsequent diseases like autoimmune, celiac disease, hemochromatosis, anemia, etc. To see how well any of those genotypes fair. We could also detect patterns in the fold change values between genotypes of the genes expressed in comparing the capillary samples all within 1 hour after being inoculated with CoV, inactive CoV, CoV and an interleukin alpha, or control group. Then compare the liver tumor samples of each group A through E that was monitored after being inoculated with CoV at 0,12,24,36, and 48 hours side by side with the control groups of groups A through E.
 
 ***
+I joinged genecards.org and found that this site has some useful information on gene networks for analyzing genes that play a role in a network of genes that function at some level on the human anatomy. Such as anemia, cannabidiol,celiac disease, diabetes type 1 and 2, hemochromatosis, immunity, pain, and tumorigenesis. I downloaded the csv files for each of these networks just mentioned. There is a ranking of each gene as importance the higher the ranked order in the network functional role on the human body.
+
+We can import each of those now.
+
+```{r}
+anemiaNetwork <- read.csv('GeneCards-SearchResults-anemiaNetwork.csv', sep=',',
+                          header=TRUE, na.strings=c('',' '))
+
+cannabidiolNetwork <- read.csv('GeneCards-SearchResults-cannabidiolNetwork.csv', sep=',',
+                          header=TRUE, na.strings=c('',' '))
+celiacDiseaseNetwork <- read.csv('GeneCards-SearchResults-celiacDiseaseNetwork.csv',
+                                 sep=',', header=TRUE, na.strings=c('',' '))
+diabetesType1Network <- read.csv('GeneCards-SearchResults-diabetesType1Network.csv',
+                                 sep=',', header=TRUE, na.strings=c('',' '))
+diabetesType2Network <- read.csv('GeneCards-SearchResults-diabetesType2Network.csv',
+                                 sep=',', header=TRUE, na.strings=c('',' '))
+hemochromatosisNetwork <- read.csv('GeneCards-SearchResults-hemochromatosisNetwork.csv', 
+                          sep=',',header=TRUE, na.strings=c('',' '))
+immunityNetwork <- read.csv('GeneCards-SearchResults-immunityNetwork.csv', 
+                          sep=',',header=TRUE, na.strings=c('',' '))
+painNetwork <- read.csv('GeneCards-SearchResults-painNetwork.csv', 
+                          sep=',', header=TRUE, na.strings=c('',' '))
+tumorigenesisNetwork <- read.csv('GeneCards-SearchResults-tumorigenesisNetwork.csv', sep=',',
+                          header=TRUE, na.strings=c('',' '))
 
 
-
+```
 
 ***
+
+We could then take our combined data from the liver and capillary datasets to look at the copy number variants of genotypes within these networks separately to understand how or if these genes have a high number of copy number in control versus diseased and diseased/treated states.
 
 
