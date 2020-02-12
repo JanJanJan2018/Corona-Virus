@@ -3,8 +3,8 @@ title: "Coronavirus Liver and Blood Capillary Samples"
 author: "Janis Corona"
 date: "2/8/2020"
 output:
-  html_document: default
   word_document: default
+  html_document: default
 ---
 
 These samples are the headers added from three Gene Expression Omnibus studies at 
@@ -380,4 +380,162 @@ ggplot(data = A_tidy1, aes(x=Gene, y=GeneExpression, fill=TimeInterval)) +
 The above genes in part 2 of the group A Coronavirus samples over 48 hours, shows that the gene expression values increase up to 24 hours then decrease to 48 hours for most of the genes above.
 
 ***
+***
+
+Lets look back at the platforms and the features removed. The sequence field is an interesting field because it can show copy number variants of genes by the genes that are duplicates at other probes from the samples.
+```{r}
+Platform13497 <- read.csv('GPL13497-9755-forSequenceFeature-GSE100509.csv', sep=',',
+                   na.strings=c('',' '), header=TRUE)
+Platform16699 <- read.csv('GPL16699-forSequenceFeatureGSE89166_GSE89160.csv', sep=',',
+                          na.strings=c('',' '), header=TRUE)
+
+```
+
+The features in Platform13497 and the first five listed ID values for this platform:
+```{r}
+colnames(Platform13497)
+head(Platform13497$SPOT_ID)[1:5]
+```
+
+
+The features in Platform16699 and the first five listed ID values of that platform:
+```{r}
+colnames(Platform16699)
+head(Platform16699$SPOT_ID)[1:5]
+```
+
+
+Lets keep only the ID (Platform16699) or SPOT_ID (Platform13497), GENE_SYMBOL, DESCRIPTION, and SEQUENCE features of both platforms.
+```{r}
+P16699 <- Platform16699[,c(1,10,17,19)]
+P13497 <- Platform13497[,c(2,7,15,17)]
+
+```
+
+Lets also remove the incomplete cases in both platforms.
+```{r}
+work16699 <- P16699[complete.cases(P16699),]
+work13497 <- P13497[complete.cases(P13497),]
+```
+
+Now merge these data sets to their corresponding samples by SPOT_ID.First read in the samples data for each platform and series.
+```{r}
+GSE89166_89160 <- read.csv('GSE89166_GSE89160.csv',sep=',', na.strings=c('',' '),
+                           header=TRUE)
+GSE100509 <- read.csv('GSE100509.csv', sep=',', header=TRUE, 
+                      na.strings=c('',' '))
+
+```
+
+Now merge the series data sets to their respective platforms of gene informational meta features.
+```{r}
+Series100509 <- merge(work13497,GSE100509,by.x='SPOT_ID', by.y='ID_REF')
+Series89166_89160 <- merge(work16699,GSE89166_89160,by.x='ID', by.y='ID_REF')
+```
+
+Rename the columns of the Series100509 to the 5 groups for each of CoV and Ctrl over 0,12,24,36, and 48 hours.
+```{r}
+colnames(Series100509)
+
+```
+
+```{r}
+group <- rep(1:5,10)
+Group <- gsub('1','Group_A',group)
+Group <- gsub('2','Group_B',Group)
+Group <- gsub('3','Group_C',Group)
+Group <- gsub('4','Group_D',Group)
+Group <- gsub('5','Group_E',Group)
+
+names <- colnames(Series100509)[5:54]
+
+Names <- paste(names,Group,sep='_')
+
+newNames <- gsub('_MERS','', Names)
+newNames
+```
+
+Change the column names in Series100509 to the new column names identifying which group the samples is from in A:E.
+```{r}
+colnames(Series100509)[5:54] <- newNames
+colnames(Series100509)
+```
+
+Remove the ID and SPOT_ID fields of the probe labels that won't be needed for the analysis.
+```{r}
+Series89 <- Series89166_89160[,-1]
+Series100 <- Series100509[,-c(1,3,4)]
+```
+
+
+Now combine the series together by genes in common.
+```{r}
+ComboLiverCapillarySequences <- merge(Series89,Series100, by.x='GENE_SYMBOL',
+                                      by.y='GENE_SYMBOL')
+
+```
+
+
+There should be different genotypes or copy number variations in the SEQUENCE feature column, which will identify which nucleotide jumps, is deleted, rearranged in the gene expressions. This time around lets group by SEQUENCE to see how many genotypes there are in all the genes. This could give more information in the analysis of any genotypes of genes could be more susceptible to pathogenesis of CoV or immunity to it.
+***
+
+```{r, message=FALSE, error=FALSE, warning=FALSE}
+library(dplyr)
+
+
+```
+
+***
+This next portion of this analysis shows the top five genes in the data, the number of genotypes or copy number variations of the nucleotide sequences are in each gene, and the gene name. This could be useful to determine how well the genotypes within these five genes that were expressed more than the other 65k genes were when analyzing the effects of CoV, inactive CoV, CoV treated with an interleukin, and the control samples.
+```{r}
+SeqGroup <- ComboLiverCapillarySequences %>% group_by(GENE_SYMBOL) %>% count(n=n())
+SeqGroup <- SeqGroup[order(SeqGroup$n, decreasing=TRUE),-3]
+
+SeqGroup5 <- SeqGroup[1:5,]
+
+genes5sequences <- merge(SeqGroup5,ComboLiverCapillarySequences,
+                         by.x='GENE_SYMBOL', by.y='GENE_SYMBOL')
+
+genotypes5 <- genes5sequences %>% group_by(SEQUENCE) %>% count(n=n)
+
+genotypes5$n <- as.factor(genotypes5$n)
+SeqGroup5$n <- as.factor(SeqGroup5$n)
+
+genotypes5_1 <- merge(genotypes5, SeqGroup5, by.x='n', by.y='n')
+colnames(genotypes5_1)[c(1,3)] <- c('geneCount','genotypeCount')
+head(genotypes5_1)
+```
+
+Write the files above out to csv.
+```{r}
+write.csv(ComboLiverCapillarySequences, 'SequencesBothCleaned.csv',row.names=FALSE)
+write.csv(genotypes5_1, 'Genotypes_5_1.csv', row.names=FALSE)
+```
+
+```{r}
+ComboCNV <- ComboLiverCapillarySequences[,-c(1,2)]
+copynumbers <- merge(genotypes5_1,ComboCNV,
+                     by.x='SEQUENCE', by.y='SEQUENCE')
+CNV <- copynumbers[!duplicated(copynumbers$SEQUENCE),]
+write.csv(CNV, 'copyNumbers.csv', row.names=FALSE)
+```
+
+```{r}
+CNV
+
+```
+
+***
+
+The above table shows the five genes that had the highest count and then the genotypes within those five genes by number or count of those genotypes of DNA copy number variations in the SEQUENCE. 
+
+It would be interesting to analyze those sequences of copy number variations within the top 5 genes expressed the most number of times in this data. Comparing networks of genes associated with processes in the body like immune response, pathogenesis of disease onset, networks of human processes in the body associated with cancer or subsequent diseases like autoimmune, celiac disease, hemochromatosis, anemia, etc. To see how well any of those genotypes fair. We could also detect patterns in the fold change values between genotypes of the genes expressed in comparing the capillary samples all within 1 hour after being inoculated with CoV, inactive CoV, CoV and an interleukin alpha, or control group. Then compare the liver tumor samples of each group A through E that was monitored after being inoculated with CoV at 0,12,24,36, and 48 hours side by side with the control groups of groups A through E.
+
+***
+
+
+
+
+***
+
 
