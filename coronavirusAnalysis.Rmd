@@ -3,8 +3,8 @@ title: "Coronavirus Liver and Blood Capillary Samples"
 author: "Janis Corona"
 date: "2/8/2020"
 output:
-  html_document: default
   word_document: default
+  html_document: default
 ---
 
 These samples are the headers added from three Gene Expression Omnibus studies at 
@@ -511,6 +511,20 @@ head(genotypes5_1)
 Write the files above out to csv.
 ```{r}
 write.csv(ComboLiverCapillarySequences, 'SequencesBothCleaned.csv',row.names=FALSE)
+```
+
+Write this large file into three subsets of three tiers because it is more than 57mb in size, and I want to load it into github.They would be read in separately, then they would be row binded in order of tier1, tier2, and then tier 3: 
+- __ComboLiverCapillarySequences <- rbind(SequencesBothCleaned_tier1,SequencesBothCleaned_tier2,SequencesBothCleaned_tier3)__
+```{r}
+write.csv(ComboLiverCapillarySequences[1:21000,],
+          'SequencesBothCleaned_tier1.csv',row.names=FALSE)
+write.csv(ComboLiverCapillarySequences[21001:42000,],
+          'SequencesBothCleaned_tier2.csv',row.names=FALSE)
+write.csv(ComboLiverCapillarySequences[42001:65505,],
+          'SequencesBothCleaned_tier3.csv',row.names=FALSE)
+```
+
+```{r}
 write.csv(genotypes5_1, 'Genotypes_5_1.csv', row.names=FALSE)
 ```
 
@@ -853,4 +867,148 @@ Now, lets start working on the data that confirms or better asserts what is goin
 
 3.)  Also, looking at the **tumorigenesis gene network** to see how the genes that are involved in tumor growth in the body react to CoV in the liver tumor samples and the blood capillary samples.
 
+
+***
+***
+
+Lets look at 1.) for the time sequence of the blood capillary samples for each of 0, 12, 24, 36, and 48 hours for the mean values of CoV and ctrl samples.
+
+Time 0:
+We have to go back to the beginning when adding the platform sequence values to the probe ideas of the series. We have the cleaned series for this data, Series100509. Otherwise, there are duplicate gene values, and the SNP values of the CBD gene with 2 SNPs will be the same. 
+```{r}
+series100509 <- Series100509[,-c(1,3)]
+s100 <- series100509[,c(1,2,grep('0hr', colnames(series100509)))]
+
+CBD5 <- cannabidiol5[,1:2]
+CBD5_s100 <- merge(CBD5, s100, by.x='Gene.Symbol', by.y='GENE_SYMBOL')
+
+seqN_CBD <- CBD5_s100 %>% group_by(SEQUENCE) %>% count(n=n())
+seqN_CBD <- seqN_CBD[,-3]
+colnames(seqN_CBD)[2] <- 'GenotypeCount'
+
+gen_CBD <- CBD5_s100 %>% group_by(Gene.Symbol) %>% count(n=n())
+gen_CBD <- gen_CBD[,-3]
+colnames(gen_CBD)[2] <- 'GeneCount'
+
+CBD5_s100_2 <- merge(seqN_CBD, CBD5_s100, by.x='SEQUENCE', by.y='SEQUENCE')
+CBD5_s100_3 <- merge(gen_CBD, CBD5_s100_2, by.x='Gene.Symbol', by.y='Gene.Symbol')
+
+CBD5_s100_3$geneClass <- ifelse(CBD5_s100_3$GeneCount>1, 
+                               paste(as.character(CBD5_s100_3$Gene.Symbol), 
+                                     CBD5_s100_3$GeneCount,sep='_'),
+                               as.character(CBD5_s100_3$Gene.Symbol))
+CBD5_s100_3$geneClass[3] <- 'PPARG_1'
+CBD5_s100_3 <- CBD5_s100_3[,c(1:2,16,3:15)]
+```
+
+
+```{r}
+covSamples <- as.vector(colnames(CBD5_s100_3)[7:11])
+CBD_seqCoV_t0 <- CBD5_s100_3 %>% group_by(SEQUENCE) %>% summarise_at(vars(covSamples), mean)
+CBD_seqCoV_t0$CoV_t0_SeqMeans <- rowMeans(CBD_seqCoV_t0[2:6])
+
+CoV_t0 <- CBD5_s100_3[,1:6]
+CoV_t0_Means <- merge(CoV_t0, CBD_seqCoV_t0, by.x='SEQUENCE', by.y='SEQUENCE')
+CoV_t0_seqMean <- CoV_t0_Means[,c(1:6,12)]
+
+ctrlSamples <- as.vector(colnames(CBD5_s100_3)[12:16])
+CBD_seqCtrl_t0 <- CBD5_s100_3 %>% group_by(SEQUENCE) %>% summarise_at(vars(ctrlSamples), mean)
+CBD_seqCtrl_t0$Ctrl_t0_SeqMeans <- rowMeans(CBD_seqCtrl_t0[2:6])
+
+Ctrl_t0_Means <- merge(CoV_t0, CBD_seqCtrl_t0, by.x='SEQUENCE', by.y='SEQUENCE')
+Ctrl_t0_seqMean <- Ctrl_t0_Means[,c(1,12)]
+
+
+t0_CBD <- merge(CoV_t0_seqMean, Ctrl_t0_seqMean, by.x='SEQUENCE', by.y='SEQUENCE')
+
+t0_CBD$FoldChange <- t0_CBD$CoV_t0_SeqMeans/t0_CBD$Ctrl_t0_SeqMeans
+```
+
+***
+
+```{r}
+ggplot(data = t0_CBD, aes(x=geneClass, y=FoldChange)) +
+  geom_bar(stat='identity', position=position_dodge())+
+  scale_y_continuous()+
+  scale_fill_brewer(palette='Paired') + 
+  geom_hline(yintercept=1, linetype="dashed", color = "red")+
+  theme(legend.position="bottom")+
+  ggtitle('CBD Gene Fold Changes for CoV at 0 Hours')+
+  ylab('Gene Expression Fold Change Values')
+
+```
+
+The above chart is one of the fold change values around 1, with those less than 1 insulin and the cannabidiol receptor 1 genes.
+
+***
+
+
+Now we will look at the mean values of those CBD genes on the blood capillary of the CoV and control sample means.
+```{r}
+tidyCBD <- as.data.frame(gather(t0_CBD, 'SampleType','MeanValue',7:8))
+tidyCBD$SampleType <- gsub('CoV_t0_SeqMeans','CoV', tidyCBD$SampleType)
+tidyCBD$SampleType <- gsub('Ctrl_t0_SeqMeans','Control', tidyCBD$SampleType)
+
+```
+
+```{r}
+ggplot(data = tidyCBD, aes(x=geneClass, y=MeanValue,fill=SampleType)) +
+  geom_bar(stat='identity', position=position_dodge())+
+  scale_y_continuous()+
+  scale_fill_brewer(palette='Paired') + 
+  theme(legend.position="bottom")+
+  ggtitle('CBD Gene Mean Values at 0 Hours')+
+  ylab('Mean Values')
+
+
+```
+
+As we see in the chart above the tumor necrosis factor, TNF, gene increases in Coronavirus samples compared to control samples in blood capillaries as it did in liver tumor samples, as well as insulin, INS, decreasing in both tissue types. But that was at zero hours time for blood capillary tissue, closest to the one hour time of the liver tumor samples previously analyzed. 
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
 
