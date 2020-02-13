@@ -3,8 +3,8 @@ title: "Coronavirus Liver and Blood Capillary Samples"
 author: "Janis Corona"
 date: "2/8/2020"
 output:
-  word_document: default
   html_document: default
+  word_document: default
 ---
 
 These samples are the headers added from three Gene Expression Omnibus studies at 
@@ -20,6 +20,16 @@ In the first two studies that used the liver tumor samples to examine the effect
 In the the third study that used blood capillaries, there were five samples followed over a 0,12,24,36, and 48 hour time intervals in groups A,B,C,D, and E that compared the time interval values of screening for changes in microarray analysis with a mock group of the same. 
 
 This following data is the data of all genes in common between these three studies, cleaned to remove missing values and with the attached gene symbols from the GEO platform for the probe IDs.
+
+***
+The libraries used for this script are tidyr, dplyr, and ggplot2.
+```{r, error=FALSE, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+```
+***
+
 ```{r}
 both <- read.csv('both_clean_liver_capillary_CoV.csv', sep=',', header=TRUE, 
                  na.strings=c('',' '))
@@ -36,11 +46,8 @@ colnames(both)
 
 ```
 ***
-***
 
 Lets group the samples that are our columns with descriptive and GEO ID names into their respective groups, get the fold change between the controls from those groups, attach to the original data table, both, as a different names, then order by the genes that have the most fold change then the least fold change. Take the first 100 genes from both lists, combine into one table of 200 genes and the samples with their fold change values ordered, make into a transposed data frame so that the samples are the rows, the stats removed, and the 200 genes are the header columns to save as a machine learning ready file.
-
-***
 ***
 
 Liver tumor study control and CoV treated. Also, the IL-alpha treated and the inactive CoV treated tables are in this code block.
@@ -156,12 +163,10 @@ n <- rep('capillary_Ctrl_48hr',5)
 type <- as.data.frame(c(a,b,c,d,e,f,g,h,i,j,k,l,m,n))
 colnames(type) <- 'Class_Type'
 row.names(type) <- row.names(Combo1)
-type
 ```
 
 ```{r}
 Combo2 <- cbind(type,Combo1)
-Combo2[1:10,1:5]
 ```
 
 
@@ -194,7 +199,6 @@ row.names(type) <- row.names(Combo1)
 
 Combo3 <- cbind(type,Combo1)
 
-Combo3[1:10,1:5]
 
 write.csv(Combo3, 'ML_ready_CoV_2_classes.csv', row.names=TRUE)
 ```
@@ -222,7 +226,6 @@ row.names(type) <- row.names(Combo1)
 
 Combo4 <- cbind(type,Combo1)
 
-Combo4[1:10,1:5]
 
 write.csv(Combo4, 'ML_ready_CoV_4_classes.csv', row.names=TRUE)
 
@@ -298,7 +301,6 @@ Capillaries2[hr24,13] <- '24 hr'
 Capillaries2[hr36,13] <- '36 hr'
 Capillaries2[hr48,13] <- '48 hr'
 
-Capillaries2
 
 write.csv(Capillaries2,'FC_10_capillaries_CoV.csv', row.names=TRUE)
 ```
@@ -309,7 +311,6 @@ The above table has 10 genes as the columns with the added Class (Coronavirus or
 
 Lets make these group tables for the corona virus and see how they compare over time.
 ```{r, error=FALSE, message=FALSE, warning=FALSE}
-library(dplyr)
 
 A_group <- filter(Capillaries2, Group=='A' & Class == 'Coronavirus')
 B_group <- filter(Capillaries2, Group=='B' & Class == 'Coronavirus')
@@ -319,10 +320,6 @@ E_group <- filter(Capillaries2, Group=='E' & Class == 'Coronavirus')
 
 ```
 
-Lets use the tidyr package to put the 10 genes into one Gene field.
-```{r, warning=FALSE, error=FALSE, message=FALSE}
-library(tidyr)
-```
 
 We will do this for the A_group table and ignore the Group and Class fields, because we made it only the A group of the Coronavirus class.
 ```{r}
@@ -334,16 +331,16 @@ A_tidy$Gene <- as.factor(A_tidy$Gene)
 A_tidy
 ```
 
-```{r, error=FALSE, message=FALSE, warning=FALSE}
-library(ggplot2)
-```
 
-```{r}
+***
+
+```{r, width=800, height=600}
 ggplot(data = A_tidy, aes(x=Gene, y=GeneExpression, fill=TimeInterval)) +
   geom_bar(stat='identity', position=position_dodge())+
   scale_y_continuous(breaks = seq(0, 15, by=1), limits=c(0,15))+
   scale_fill_brewer(palette='Paired') + 
-  ggtitle('Group A with Coronavirus for Selected Genes Part 1')+
+  theme(legend.position="top")+
+  #ggtitle('Group A with Coronavirus for Selected Genes Part 1')+
   xlab('Gene')+
   ylab('Gene Expression Values')
 
@@ -353,6 +350,10 @@ ggplot(data = A_tidy, aes(x=Gene, y=GeneExpression, fill=TimeInterval)) +
 The genes above for Part 1 of the group A samples of coronavirus in blood capillaries show some variation in gene expression values for some of these genes that had the most change in the liver tumor samples. Starting at the initial hour up to 48 hours after being inoculated in vitro, there is an increase then decrease for ATF3 and LHB genes, while a decrease then increase close to initial value with PCLO and slightly with RASSF7. For DEFB1, it has a cyclical increase, decrease, increase, then decrease to stabilize closer to the initial gene expressio value.
 
 ***
+***
+
+
+
 
 Now lets find the other five genes in the group A set of ten genes found to have the most change in the liver tumor samples, and examined here in the blood capillary samples.
 ```{r}
@@ -361,15 +362,17 @@ A_tidy1 <- gather(A_group3, 'Gene','GeneExpression',1:5)
 A_tidy1$GeneExpression <- round(as.numeric(A_tidy1$GeneExpression),1)
 A_tidy1$TimeInterval <- as.factor(A_tidy1$TimeInterval)
 A_tidy1$Gene <- as.factor(A_tidy1$Gene)
-A_tidy1
 ```
 
+***
 
-```{r}
+
+```{r, width=800, height=600}
 ggplot(data = A_tidy1, aes(x=Gene, y=GeneExpression, fill=TimeInterval)) +
   geom_bar(stat='identity', position=position_dodge())+
   scale_y_continuous(breaks = seq(0, 15, by=1), limits=c(0,15))+
   scale_fill_brewer(palette='Paired') + 
+  theme(legend.position="bottom")+
   ggtitle('Group A with Coronavirus for Selected Genes Part 2')+
   xlab('Gene')+
   ylab('Gene Expression Values')
@@ -378,6 +381,9 @@ ggplot(data = A_tidy1, aes(x=Gene, y=GeneExpression, fill=TimeInterval)) +
 
 ***
 The above genes in part 2 of the group A Coronavirus samples over 48 hours, shows that the gene expression values increase up to 24 hours then decrease to 48 hours for most of the genes above.
+
+
+
 
 ***
 ***
@@ -394,14 +400,12 @@ Platform16699 <- read.csv('GPL16699-forSequenceFeatureGSE89166_GSE89160.csv', se
 The features in Platform13497 and the first five listed ID values for this platform:
 ```{r}
 colnames(Platform13497)
-head(Platform13497$SPOT_ID)[1:5]
 ```
 
 
 The features in Platform16699 and the first five listed ID values of that platform:
 ```{r}
 colnames(Platform16699)
-head(Platform16699$SPOT_ID)[1:5]
 ```
 
 
@@ -479,11 +483,9 @@ ComboLiverCapillarySequences <- merge(Series89,Series100, by.x='GENE_SYMBOL',
 There should be different genotypes or copy number variations in the SEQUENCE feature column, which will identify which nucleotide jumps, is deleted, rearranged in the gene expressions. This time around lets group by SEQUENCE to see how many genotypes there are in all the genes. This could give more information in the analysis of any genotypes of genes could be more susceptible to pathogenesis of CoV or immunity to it.
 ***
 
-```{r, message=FALSE, error=FALSE, warning=FALSE}
-library(dplyr)
 
 
-```
+***
 
 ***
 This next portion of this analysis shows the top five genes in the data, the number of genotypes or copy number variations of the nucleotide sequences are in each gene, and the gene name. This could be useful to determine how well the genotypes within these five genes that were expressed more than the other 65k genes were when analyzing the effects of CoV, inactive CoV, CoV treated with an interleukin, and the control samples.
@@ -521,16 +523,27 @@ write.csv(CNV, 'copyNumbers.csv', row.names=FALSE)
 ```
 
 ```{r}
-CNV
-
+colnames(CNV)
 ```
 
+This feature, SEQUENCE, provides the single nucleotide polymorphisms (SNP)s or copy number variants of each gene's DNA, many are duplicated. Here are the first few SNPs.
+```{r}
+head(CNV$SEQUENCE)
+```
+
+
+***
 ***
 
-The above table shows the five genes that had the highest count and then the genotypes within those five genes by number or count of those genotypes of DNA copy number variations in the SEQUENCE. 
 
-It would be interesting to analyze those sequences of copy number variations within the top 5 genes expressed the most number of times in this data. Comparing networks of genes associated with processes in the body like immune response, pathogenesis of disease onset, networks of human processes in the body associated with cancer or subsequent diseases like autoimmune, celiac disease, hemochromatosis, anemia, etc. To see how well any of those genotypes fair. We could also detect patterns in the fold change values between genotypes of the genes expressed in comparing the capillary samples all within 1 hour after being inoculated with CoV, inactive CoV, CoV and an interleukin alpha, or control group. Then compare the liver tumor samples of each group A through E that was monitored after being inoculated with CoV at 0,12,24,36, and 48 hours side by side with the control groups of groups A through E.
+It would be interesting in the fold change values between genotypes of the genes expressed in comparing the capillary samples all within 1 hour after being inoculated with CoV, inactive CoV, CoV and an interleukin alpha, or control group. Then compare the liver tumor samples of each group A through E that was monitored after being inoculated with CoV at 0,12,24,36, and 48 hours side by side with the control groups of groups A through E.
 
+We could also detect patterns to analyze those sequences of copy number variations within the top 5 genes expressed the most number of times in this data. Comparing networks of genes associated with processes in the body like immune response, pathogenesis of disease onset, networks of human processes in the body associated with cancer or subsequent diseases like autoimmune, celiac disease, hemochromatosis, anemia, etc. To see how well any of those genotypes fair. 
+
+We have the five genes that had the highest copy number variations within them and merged it with our liver tumor and capillary CoV and control samples in the CNV data table.
+
+
+***
 ***
 I joinged genecards.org and found that this site has some useful information on gene networks for analyzing genes that play a role in a network of genes that function at some level on the human anatomy. Such as anemia, cannabidiol,celiac disease, diabetes type 1 and 2, hemochromatosis, immunity, pain, and tumorigenesis. I downloaded the csv files for each of these networks just mentioned. There is a ranking of each gene as importance the higher the ranked order in the network functional role on the human body.
 
@@ -563,5 +576,281 @@ tumorigenesisNetwork <- read.csv('GeneCards-SearchResults-tumorigenesisNetwork.c
 ***
 
 We could then take our combined data from the liver and capillary datasets to look at the copy number variants of genotypes within these networks separately to understand how or if these genes have a high number of copy number in control versus diseased and diseased/treated states.
+
+Lets take the top five genes from each network, add a column feature to label the gene network, then combine those tables. They are already ordered each by Relevance.score.
+```{r}
+
+amenia5 <- anemiaNetwork[1:5,]
+cannabidiol5 <- cannabidiolNetwork[1:5,]
+diabetesOne5 <- diabetesType1Network[1:5,]
+diabetesTwo5 <- diabetesType2Network[1:5,]
+hemochromatosis5 <- hemochromatosisNetwork[1:5,]
+immunity5 <- immunityNetwork[1:5,]
+pain5 <- painNetwork[1:5,]
+tumorigenesis5 <- tumorigenesisNetwork[1:5,]
+
+```
+
+
+Lets merge each network disease pathway with the ComboLiverCapillarySequences data table.
+```{r}
+anemia5_path <- merge(amenia5, ComboLiverCapillarySequences, by.x='Gene.Symbol',
+                      by.y='GENE_SYMBOL')
+cannabidiol5_path <- merge(cannabidiol5, ComboLiverCapillarySequences, by.x='Gene.Symbol',
+                      by.y='GENE_SYMBOL')
+diabetesOne5_path <- merge(diabetesOne5, ComboLiverCapillarySequences, by.x='Gene.Symbol',
+                      by.y='GENE_SYMBOL')
+diabetesTwo5_path <- merge(diabetesTwo5, ComboLiverCapillarySequences, by.x='Gene.Symbol',
+                      by.y='GENE_SYMBOL')
+hemochromatosis5_path <- merge(hemochromatosis5, ComboLiverCapillarySequences, by.x='Gene.Symbol',
+                      by.y='GENE_SYMBOL')
+immunity5_path <- merge(immunity5, ComboLiverCapillarySequences, by.x='Gene.Symbol',
+                      by.y='GENE_SYMBOL')
+pain5_path <- merge(pain5, ComboLiverCapillarySequences, by.x='Gene.Symbol',
+                      by.y='GENE_SYMBOL')
+tumorigenesis5_path <- merge(tumorigenesis5, ComboLiverCapillarySequences, by.x='Gene.Symbol',
+                      by.y='GENE_SYMBOL')
+
+```
+
+Combine the above data tables together.
+```{r}
+Network <- as.data.frame(c(rep('anemia',length(anemia5_path$Gene.Symbol)),
+                         rep('cannabidiol',length(cannabidiol5_path$Gene.Symbol)),
+                         rep('diabetes 1',length(diabetesOne5_path$Gene.Symbol)),
+                         rep('diabetes 2', length(diabetesTwo5_path$Gene.Symbol)),
+                         rep('hemochromatosis', length(hemochromatosis5_path$Gene.Symbol)),
+                         rep('immunity', length(immunity5_path$Gene.Symbol)),
+                         rep('pain', length(pain5_path$Gene.Symbol)),
+                         rep('tumorigenesis',length(tumorigenesis5_path$Gene.Symbol))))
+colnames(Network) <- 'geneNetwork'
+
+networkPathwayGenes <- rbind(anemia5_path,cannabidiol5_path,diabetesOne5_path,                             diabetesTwo5_path,hemochromatosis5_path,immunity5_path,
+                             pain5_path,tumorigenesis5_path)
+PathwayGenes <- cbind(Network,networkPathwayGenes)
+```
+
+Now group by gene for the count and then by sequence for the copy number variant count within the gene.
+
+```{r}
+pathGenesCount <- PathwayGenes %>% group_by(Gene.Symbol) %>% count(n())
+pathGenotypeCount <- PathwayGenes %>% group_by(SEQUENCE) %>% count(n())
+
+pathGenes <- pathGenesCount[,-2]
+colnames(pathGenes)[2] <- 'GeneCount'
+pathGenos <- pathGenotypeCount[,-2]
+colnames(pathGenos)[2] <- 'GenotypeCount'
+
+
+```
+
+
+```{r}
+pG <- merge(pathGenos, PathwayGenes, by.x='SEQUENCE', by.y='SEQUENCE')
+pG1 <- merge(pathGenes, pG, by.x='Gene.Symbol', by.y='Gene.Symbol')
+colnames(pG1)[c(13,14,17,18)] <- paste('Study1',colnames(pG1)[c(13,14,17,18)],
+                                       sep='_')
+write.csv(pG1, 'genes-genotypes-networks.csv', row.names=FALSE)
+```
+
+
+I want to remove and hold it separate for one of the liver tumor samples studies that uses CoV1, CoV2, ctrl1, and ctrl2, because the values are not scaled the same and these numbers will ruin the analysis included as is. They were already log scaled but seem to be much larger than the other values after scaling.The previous block of code added 'Study1' to those larger scaled samples to extract for separate analysis.
+```{r}
+scaleSet <- pG1[,c(1:14,17,18)]
+otherSet <- pG1[,c(1:12,15,16,19:74)]
+
+```
+
+***
+
+Lets add in that the scaleSet columns are from study1 and leave the study2 column names in the otherSet as is. Combine and make a separate data set. I have previously examined cannabidiol in sebum/acne and brain tumor samples to briefly determine the CBD effects on hormone and immune response genes. I added this cannabidiol network to get the top five CBD genes by relative score in the CBD network. We can look at this scale set of CoV and ctrl samples from liver tumors to see if there are any obvious effects to this network that has shown to treat chronic pain in some folks.
+
+Lets get the data set of cannabidiol, CBD, to compare CoV to mock or control liver tumor samples from the larger scaled data set.
+```{r}
+CBD <- subset(scaleSet, scaleSet$geneNetwork == 'cannabidiol')
+orderCBD <- CBD[order(CBD$Gene.Symbol, decreasing=TRUE),]
+
+```
+
+We can see how many geno types are unique to a gene by adding up the genotypes to equal the genes in count. For instance, the PPARG gene has 22 counts of that gene in the data with one genotype having 22 counts, and the other genotype for that gene having only 2 counts. So that there are two unique genotypes for the gene PPARG. Lets go ahead and use dplyr to group by SEQUENCE then take the mean of that sequence but for the CoV and ctrl groups separately.
+
+The two separate CoV and Ctrl datasets for the five CBD genes with the highest count of occurence in the data.
+```{r}
+
+CBD_CoV <- CBD[,-c(15,16)]
+
+CBD_ctrl <- CBD[,-c(13,14)]
+
+samples <- as.vector(colnames(CBD_CoV)[13:14])
+samples1 <- as.vector(colnames(CBD_ctrl)[13:14])
+
+CBD_CovMeans <- CBD_CoV %>% group_by(SEQUENCE) %>% summarise_at(vars(samples),
+                                                               mean)
+CBD_CtrlMeans <- CBD_ctrl %>% group_by(SEQUENCE) %>% summarise_at(vars(samples1),
+                                                               mean)
+
+```
+
+It seems a small data set, but with this network, CBD network, there was only one gene with more than one genotype. This is why there are only six genotypes when we selected five genes.
+```{r}
+unique(CBD$SEQUENCE)
+
+```
+
+Lets combine the data means for each group by genotype or unique sequence with the genes they belong to from two features of the CBD data set, Gene.Symbol and SEQUENCE.
+```{r}
+geneSeq <- CBD[,c(1:5)]
+geneSeq1 <- merge(geneSeq, CBD_CovMeans, by.x='SEQUENCE', by.y='SEQUENCE')
+geneSeq2 <- merge(geneSeq1, CBD_CtrlMeans, by.x='SEQUENCE', by.y='SEQUENCE')
+
+geneSeq3 <- geneSeq2[!duplicated(geneSeq2),]
+geneSeq3
+```
+
+The above table shows the mean value of each genotype in the four samples, where two samples are liver tumor inoculated with CoV, and the other two are the liver tumor samples without CoV with both having been screened after 1 hour.
+
+***
+***
+
+Since we want the fold change values within each geno type of the CBD network, lets get the means of each type of either CoV or ctrl. This is now the collective sample means of the genotype means per unique sample of either CoV or ctrl.
+```{r}
+geneSeq3$CoV_Genotype_Mean <- rowMeans(geneSeq3[,6:7])
+geneSeq3$Ctrl_Geneotype_Mean <- rowMeans(geneSeq3[,8:9])
+geneSeq3[,c(1,2,10,11)]
+
+```
+
+Looking at the above, both genotypes of PPARG decrease in CoV treated samples as well as insulin, INS. But tumor necrosis factor or TNF, prostaglandin-Endoperoxide Synthase 2 or PTGS2 and Cannabinoid Receptor 1 or CNR1 all increase in CoV treated samples. This could mean that in liver tumor samples that are inoculated with Coronavirus, more tumor suppressant or destroyer called TNF is activated, more pain reliever activation in the increased CNR1, and less insulin is produced. Insulin is a diabetic factor that plays a role in glucose processing for energy. If less insulin is produced after one hour, this could mean the body doesn't want to feed a contaminant it is recognizing in the body by lessening the need for the body to consume more glucose. An aside on the insulin and glucose relationship in regulating the body:  Insulin and glucose are supposed to be balanced, where the more glucose is burned by the body for energy will lead to more insulin produced to compensate energy needs. The two types of diabetes controlled by insulin is either an overproduction of insulin that leads to an irregular need to ead more than normal amounts of food to get more glucose in the blood, or an underproduction of insulin that leads to an inadequate amount of glucose the body needs, loss of appetite and irregularly small amounts of food consumed.
+
+Immediately, some more analysis to answer questions of these assertions on the results above can be further confirmed by:
+
+1.)  Analyzing the **time sequence of the blood capillary samples** inoculated with CoV and their respective control groups. Examining how these CBD genes are effected over time.
+
+2.)  Confirming that insulin is effected by CoV by looking at the **diabetic gene networks** for type 1 and type 2 diabetes. 
+
+3.)  Also, looking at the **tumorigenesis gene network** to see how the genes that are involved in tumor growth in the body react to CoV in the liver tumor samples and the blood capillary samples.
+
+***
+***
+
+Lets put an interesting bar chart into this script to show what we have so far in the CBD genes network for liver tumor samples inoculated over one hour's time. Lets use the mutate function of dplyr to create a new feature that will name each gene with more than one genotype or copy number variant in this data. Then use tidyr to gather the sample means per genotype. And finally, plot the CoV and ctrl means using ggplot2.
+```{r}
+CBD_plot <- geneSeq3 %>% mutate(geneClass = paste(Gene.Symbol,GenotypeCount,
+                                                  sep='_'))
+```
+
+
+```{r}
+CBD_plot2 <- gather(CBD_plot, 'Sample','MeanValue',10:11)
+
+```
+
+***
+***
+
+```{r, width=800, height=600}
+ggplot(data = CBD_plot2, aes(x=geneClass, y=MeanValue, fill=Sample)) +
+  geom_bar(stat='identity', position=position_dodge())+
+  scale_y_continuous(breaks = seq(0, 1300, by=100), limits=c(0,1300))+
+  scale_fill_brewer(palette='Paired') + 
+  #ggtitle('CBD Network Gene Expression Values Treated with Coronavirus')+
+  theme(legend.position="top")+
+  #xlab('Gene and Genotype or Single Nucleotide Polymorphism or Copy Number Variant')+
+  ylab('Gene Expression Mean Values')
+
+```
+
+The lower values aren't as easy to distinguish as the scale of change in Mean values is significantly greater for some genes. We could fix this by making the plot fold change and add that field, or adding a log2 field of the means to put on the same scale for visualization purposes. Or cut off the scale for those less than 100 in Mean Values and those greater than 100.
+
+***
+***
+
+The following is the genes less than 100 for Mean genotype expression values.
+```{r, message=FALSE, error=FALSE, warning=FALSE, width=800, height=600}
+ggplot(data = CBD_plot2, aes(x=geneClass, y=MeanValue, fill=Sample)) +
+  geom_bar(stat='identity', position=position_dodge())+
+  scale_y_continuous(breaks = seq(0, 100, by=100), limits=c(0,100))+
+  scale_fill_brewer(palette='Paired') + 
+  theme(legend.position="bottom")+
+  #ggtitle('CBD Network Gene Expression Values Less than 100 Treated with CoV')+
+  ylab('Gene Expression Mean Values')
+
+```
+
+***
+***
+
+
+The following is the genes greater than 100 for Mean genotype expression values:
+```{r, message=FALSE, error=FALSE, warning=FALSE, width=800, height=600}
+ggplot(data = CBD_plot2, aes(x=geneClass, y=MeanValue, fill=Sample)) +
+  geom_bar(stat='identity', position=position_dodge())+
+  scale_y_continuous(breaks = seq(0, 1300, by=100), limits=c(0,1300))+
+  scale_fill_brewer(palette='Paired') + 
+  geom_hline(yintercept=100, linetype="dashed", color = "red")+
+  theme(legend.position="bottom")+
+  #ggtitle('CBD Network Gene levels > 100 Treated with CoV')+
+  ylab('Gene Expression Mean Values')
+
+```
+
+***
+***
+
+
+The following is the fold change chart.
+```{r}
+CBD_plot$FoldChange <- CBD_plot$CoV_Genotype_Mean/CBD_plot$Ctrl_Geneotype_Mean
+CBD_plot3 <- CBD_plot[,c(1:9,12,10,11,13)] #fold change plot data
+CBD_plot2$logMean <- log2(CBD_plot2$MeanValue) # log2 scaled plot data
+```
+
+The chart of fold change values of the genotype or single nucleotide polymorphism (SNP) or copy number variant of the CBD gene network top five listed genes by Relevance.score.with an added dashed red line to show that genes below the line decreased and those above increased in percentage of gene expression of CoV/ctrl.
+```{r, width=800, height=600}
+ggplot(data = CBD_plot3, aes(x=geneClass, y=FoldChange)) +
+  geom_bar(stat='identity', position=position_dodge())+
+  scale_y_continuous(breaks = seq(0, 1.5, by=.1), limits=c(0,1.5))+
+  scale_fill_brewer(palette='Paired') + 
+  geom_hline(yintercept=1, linetype="dashed", color = "red")+
+  ggtitle('CBD Network Gene Expression Fold Change Values Treated with CoV')+
+  xlab('Gene and Genotype or Copy Number Variant')+
+  ylab('Gene Expression Fold Change Values')
+```
+
+***
+
+
+
+
+
+***
+***
+
+The next chart is the log2 scaled Mean values for the CBD genotypes.
+```{r, width=800, height=600}
+ggplot(data = CBD_plot2, aes(x=geneClass, y=logMean, fill=Sample)) +
+  geom_bar(stat='identity', position=position_dodge())+
+  scale_y_continuous(breaks = seq(0, 11, by=1), limits=c(0,11))+
+  scale_fill_brewer(palette='Paired') + 
+  theme(legend.position="bottom") +
+  #ggtitle('CBD Network Gene Expression Log2 Mean Values Treated with Coronavirus')+
+  ylab('Gene Expression Log2 Mean Values')
+
+```
+
+Those visuals help establish that the PPARG has two copy number variants of the gene that are expressed mush more in both the control and CoV inoculated samples by mean genotype expression values, fold change values, and log2 scaled values. We can see that CoV infected samples after 1 hour in liver tumor samples increases genotype expressions of CNR_1, PTGS2, and TNF. And that INS and PPARG are decreased in the first hour of inoculation with CoV.
+
+
+***
+***
+
+
+Now, lets start working on the data that confirms or better asserts what is going on with these genes. Recall that we wanted to examine three possibilities to understand why we made the observation above on the what the data provided for the cannabidiol genes network.
+
+1.)  Analyzing the **time sequence of the blood capillary samples** inoculated with CoV and their respective control groups. Examining how these CBD genes are effected over time.
+
+2.)  Confirming that insulin is effected by CoV by looking at the **diabetic gene networks** for type 1 and type 2 diabetes. 
+
+3.)  Also, looking at the **tumorigenesis gene network** to see how the genes that are involved in tumor growth in the body react to CoV in the liver tumor samples and the blood capillary samples.
 
 
