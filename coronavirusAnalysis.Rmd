@@ -964,25 +964,190 @@ ggplot(data = tidyCBD, aes(x=geneClass, y=MeanValue,fill=SampleType)) +
 ```
 
 As we see in the chart above the tumor necrosis factor, TNF, gene increases in Coronavirus samples compared to control samples in blood capillaries as it did in liver tumor samples, as well as insulin, INS, decreasing in both tissue types. But that was at zero hours time for blood capillary tissue, closest to the one hour time of the liver tumor samples previously analyzed. 
+
+***
+
+Now, lets look at what happens after 24 hours, skipping 12 hours for these blood capillary samples inoculated with CoV.
+
 ```{r}
+series100509_24 <- Series100509[,-c(1,3)]
+s100_24 <- series100509[,c(1,2,grep('24hr', colnames(series100509)))]
+
+CBD5_24 <- cannabidiol5[,1:2]
+CBD5_s100_24 <- merge(CBD5, s100_24, by.x='Gene.Symbol', by.y='GENE_SYMBOL')
+
+seqN_CBD_24 <- CBD5_s100_24 %>% group_by(SEQUENCE) %>% count(n=n())
+seqN_CBD_24 <- seqN_CBD_24[,-3]
+colnames(seqN_CBD_24)[2] <- 'GenotypeCount'
+
+gen_CBD_24 <- CBD5_s100_24 %>% group_by(Gene.Symbol) %>% count(n=n())
+gen_CBD_24 <- gen_CBD_24[,-3]
+colnames(gen_CBD_24)[2] <- 'GeneCount'
+
+CBD5_s100_2_24 <- merge(seqN_CBD_24, CBD5_s100_24, by.x='SEQUENCE', by.y='SEQUENCE')
+CBD5_s100_3_24 <- merge(gen_CBD_24, CBD5_s100_2_24, by.x='Gene.Symbol', by.y='Gene.Symbol')
+
+CBD5_s100_3_24$geneClass <- ifelse(CBD5_s100_3_24$GeneCount>1, 
+                               paste(as.character(CBD5_s100_3_24$Gene.Symbol), 
+                                     CBD5_s100_3_24$GeneCount,sep='_'),
+                               as.character(CBD5_s100_3_24$Gene.Symbol))
+CBD5_s100_3_24$geneClass[3] <- 'PPARG_1'
+CBD5_s100_3_24 <- CBD5_s100_3_24[,c(1:2,16,3:15)]
 
 ```
 
 ```{r}
+covSamples_24 <- as.vector(colnames(CBD5_s100_3_24)[7:11])
+CBD_seqCoV_t_24 <- CBD5_s100_3_24 %>% group_by(SEQUENCE) %>% summarise_at(vars(covSamples_24), mean)
+CBD_seqCoV_t_24$CoV_t_24_SeqMeans <- rowMeans(CBD_seqCoV_t_24[2:6])
+
+CoV_t_24 <- CBD5_s100_3_24[,1:6]
+CoV_t_24_Means <- merge(CoV_t_24, CBD_seqCoV_t_24, by.x='SEQUENCE', by.y='SEQUENCE')
+CoV_t_24_seqMean <- CoV_t_24_Means[,c(1:6,12)]
+
+ctrlSamples_24 <- as.vector(colnames(CBD5_s100_3_24)[12:16])
+CBD_seqCtrl_t_24 <- CBD5_s100_3_24 %>% group_by(SEQUENCE) %>% summarise_at(vars(ctrlSamples_24), mean)
+CBD_seqCtrl_t_24$Ctrl_t_24_SeqMeans <- rowMeans(CBD_seqCtrl_t_24[2:6])
+
+Ctrl_t_24_Means <- merge(CoV_t_24, CBD_seqCtrl_t_24, by.x='SEQUENCE', by.y='SEQUENCE')
+Ctrl_t_24_seqMean <- Ctrl_t_24_Means[,c(1,12)]
+
+
+t_24_CBD <- merge(CoV_t_24_seqMean, Ctrl_t_24_seqMean, by.x='SEQUENCE', by.y='SEQUENCE')
+
+t_24_CBD$FoldChange <- t_24_CBD$CoV_t_24_SeqMeans/t_24_CBD$Ctrl_t_24_SeqMeans
+```
+
+```{r}
+ggplot(data = t_24_CBD, aes(x=geneClass, y=FoldChange)) +
+  geom_bar(stat='identity', position=position_dodge())+
+  scale_y_continuous()+
+  scale_fill_brewer(palette='Paired') + 
+  geom_hline(yintercept=1, linetype="dashed", color = "red")+
+  theme(legend.position="bottom")+
+  ggtitle('CBD Gene Fold Changes for CoV at 24 Hours')+
+  ylab('Gene Expression Fold Change Values')
+
+```
+
+Looking at the chart above on the fold change values of the blood capillaries over 24 hours after having been inoculated with CoV compared to a control group, there is a switch or change in those genes that were previously up-regulated and down-regulated.
+
+TNF and CNR1 have negligible changes, INS is now up-regulated after 24 hours of being inoculated, and both genotypes or copy number variants of PPARG have decreased. Previously, at 0 hours in blood capillaries we saw that INS and CNR1 were down-regulated , both PPARG genotypes were negligibly close to no change at all, and TNF and PTGS2 were up-regulated.
+
+***
+
+
+```{r}
+tidyCBD_24 <- as.data.frame(gather(t_24_CBD, 'SampleType','MeanValue',7:8))
+tidyCBD_24$SampleType <- gsub('CoV_t_24_SeqMeans','CoV', tidyCBD_24$SampleType)
+tidyCBD_24$SampleType <- gsub('Ctrl_t_24_SeqMeans','Control', tidyCBD_24$SampleType)
 
 ```
 
 ```{r}
+ggplot(data = tidyCBD_24, aes(x=geneClass, y=MeanValue,fill=SampleType)) +
+  geom_bar(stat='identity', position=position_dodge())+
+  scale_y_continuous()+
+  scale_fill_brewer(palette='Paired') + 
+  theme(legend.position="bottom")+
+  ggtitle('CBD Gene Mean Values at 24 Hours')+
+  ylab('Mean Values')
+```
+
+The above bar chart shows the mean values of the control and CoV inoculated samples after 24 hours in the blood capillary samples. In CoV inoculation, the gene expression values for both PPARG genotypes decrease, in INS and PTGS2 there is an up-regulation, and CNR1 and TNF show negligible changes, with a slight decrease in CNR1 gene expression.
+
+***
+
+Now, lets look at after 48 hours of being inoculated with CoV in these blood capillary samples.
+
+```{r}
+series100509_48 <- Series100509[,-c(1,3)]
+s100_48 <- series100509[,c(1,2,grep('48hr', colnames(series100509)))]
+
+CBD5_48 <- cannabidiol5[,1:2]
+CBD5_s100_48 <- merge(CBD5, s100_48, by.x='Gene.Symbol', by.y='GENE_SYMBOL')
+
+seqN_CBD_48 <- CBD5_s100_48 %>% group_by(SEQUENCE) %>% count(n=n())
+seqN_CBD_48 <- seqN_CBD_48[,-3]
+colnames(seqN_CBD_48)[2] <- 'GenotypeCount'
+
+gen_CBD_48 <- CBD5_s100_48 %>% group_by(Gene.Symbol) %>% count(n=n())
+gen_CBD_48 <- gen_CBD_48[,-3]
+colnames(gen_CBD_48)[2] <- 'GeneCount'
+
+CBD5_s100_2_48 <- merge(seqN_CBD_48, CBD5_s100_48, by.x='SEQUENCE', by.y='SEQUENCE')
+CBD5_s100_3_48 <- merge(gen_CBD_48, CBD5_s100_2_48, by.x='Gene.Symbol', by.y='Gene.Symbol')
+
+CBD5_s100_3_48$geneClass <- ifelse(CBD5_s100_3_48$GeneCount>1, 
+                               paste(as.character(CBD5_s100_3_48$Gene.Symbol), 
+                                     CBD5_s100_3_48$GeneCount,sep='_'),
+                               as.character(CBD5_s100_3_48$Gene.Symbol))
+CBD5_s100_3_48$geneClass[3] <- 'PPARG_1'
+CBD5_s100_3_48 <- CBD5_s100_3_48[,c(1:2,16,3:15)]
 
 ```
 
 ```{r}
+covSamples_48 <- as.vector(colnames(CBD5_s100_3_48)[7:11])
+CBD_seqCoV_t_48 <- CBD5_s100_3_48 %>% group_by(SEQUENCE) %>% summarise_at(vars(covSamples_48), mean)
+CBD_seqCoV_t_48$CoV_t_48_SeqMeans <- rowMeans(CBD_seqCoV_t_48[2:6])
+
+CoV_t_48 <- CBD5_s100_3_48[,1:6]
+CoV_t_48_Means <- merge(CoV_t_48, CBD_seqCoV_t_48, by.x='SEQUENCE', by.y='SEQUENCE')
+CoV_t_48_seqMean <- CoV_t_48_Means[,c(1:6,12)]
+
+ctrlSamples_48 <- as.vector(colnames(CBD5_s100_3_48)[12:16])
+CBD_seqCtrl_t_48 <- CBD5_s100_3_48 %>% group_by(SEQUENCE) %>% summarise_at(vars(ctrlSamples_48), mean)
+CBD_seqCtrl_t_48$Ctrl_t_48_SeqMeans <- rowMeans(CBD_seqCtrl_t_48[2:6])
+
+Ctrl_t_48_Means <- merge(CoV_t_48, CBD_seqCtrl_t_48, by.x='SEQUENCE', by.y='SEQUENCE')
+Ctrl_t_48_seqMean <- Ctrl_t_48_Means[,c(1,12)]
+
+
+t_48_CBD <- merge(CoV_t_48_seqMean, Ctrl_t_48_seqMean, by.x='SEQUENCE', by.y='SEQUENCE')
+
+t_48_CBD$FoldChange <- t_48_CBD$CoV_t_48_SeqMeans/t_48_CBD$Ctrl_t_48_SeqMeans
+```
+
+```{r}
+ggplot(data = t_48_CBD, aes(x=geneClass, y=FoldChange)) +
+  geom_bar(stat='identity', position=position_dodge())+
+  scale_y_continuous()+
+  scale_fill_brewer(palette='Paired') + 
+  geom_hline(yintercept=1, linetype="dashed", color = "red")+
+  theme(legend.position="bottom")+
+  ggtitle('CBD Gene Fold Changes for CoV at 48 Hours')+
+  ylab('Gene Expression Fold Change Values')
+
+```
+
+From the above chart of fold changes after 48 hours, we see that not much has changed compared to after 24 hours, except the TNF has now become up-regulated as it was at 0 hours but not after 24 hours.
+
+CNR1 remains having negligible changes as was the case after 24 hours, INS, TNF, and PTGS2 are up-regulated after 48 hours of being inoculated, and both genotypes or copy number variants of PPARG have decreased. 
+
+Previously, at 0 hours in blood capillaries we saw that INS and CNR1 were down-regulated , both PPARG genotypes were negligibly close to no change at all, and TNF and PTGS2 were up-regulated.
+
+***
+
+
+```{r}
+tidyCBD_48 <- as.data.frame(gather(t_48_CBD, 'SampleType','MeanValue',7:8))
+tidyCBD_48$SampleType <- gsub('CoV_t_48_SeqMeans','CoV', tidyCBD_48$SampleType)
+tidyCBD_48$SampleType <- gsub('Ctrl_t_48_SeqMeans','Control', tidyCBD_48$SampleType)
 
 ```
 
 ```{r}
-
+ggplot(data = tidyCBD_48, aes(x=geneClass, y=MeanValue,fill=SampleType)) +
+  geom_bar(stat='identity', position=position_dodge())+
+  scale_y_continuous()+
+  scale_fill_brewer(palette='Paired') + 
+  theme(legend.position="bottom")+
+  ggtitle('CBD Gene Mean Values at 48 Hours')+
+  ylab('Mean Values')
 ```
+
+The above bar chart shows the mean values of the control and CoV inoculated samples after 48 hours in the blood capillary samples. In CoV inoculation, the gene expression values for both PPARG genotypes decrease. In INS, TNF, and PTGS2 there is an up-regulation, and CNR1 shows negligible changes, with a slight decrease in CNR1 gene expression.
 
 ```{r}
 
