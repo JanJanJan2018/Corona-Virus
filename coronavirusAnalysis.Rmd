@@ -3,8 +3,8 @@ title: "Coronavirus Liver and Blood Capillary Samples"
 author: "Janis Corona"
 date: "2/8/2020"
 output:
-  word_document: default
   html_document: default
+  word_document: default
 ---
 
 These samples are the headers added from three Gene Expression Omnibus studies at 
@@ -1149,31 +1149,119 @@ ggplot(data = tidyCBD_48, aes(x=geneClass, y=MeanValue,fill=SampleType)) +
 
 The above bar chart shows the mean values of the control and CoV inoculated samples after 48 hours in the blood capillary samples. In CoV inoculation, the gene expression values for both PPARG genotypes decrease. In INS, TNF, and PTGS2 there is an up-regulation, and CNR1 shows negligible changes, with a slight decrease in CNR1 gene expression.
 
-```{r}
+***
 
+Lets look at the tumorigenesis genes and the liver tumor samples that were inoculated with the Coronavirus.
+
+Get the table with the five genes that were the highest relevance.scoring made earlier to be combined with all our samples. Then select only those liver tumor samples except for the overly scaled samples 1 and 2.Include the heat inactivated CoV and the added IL-alpha1 to CoV samples.
+```{r}
+tumorigenesis5_path_1 <- tumorigenesis5_path[,c(1,9,12,13,16:21)]
+describe <- tumorigenesis5_path[!duplicated(tumorigenesis5_path$Gene.Symbol),c(1,2,8)]
+describe
 ```
 
 ```{r}
+colnames(tumorigenesis5_path_1)
+```
 
+Now, group by SEQUENCE to see how many genotypes there are in this set of five tumor creating network of genes.
+```{r}
+seqTumor <- tumorigenesis5_path_1 %>% group_by(SEQUENCE) %>% count(n=n())
+Seq_tumor <- as.data.frame(seqTumor[,-3])
+
+colnames(Seq_tumor)[2] <- 'genoTypeCount'
+
+Seq_Tumor <- merge(Seq_tumor, tumorigenesis5_path_1, 
+                   by.x='SEQUENCE', by.y='SEQUENCE')
 ```
 
 ```{r}
-
+Seq_Tumor$CoV_Means <- rowMeans(Seq_Tumor[4:5])
+Seq_Tumor$Ctrl_Means <- rowMeans(Seq_Tumor[6:7])
+Seq_Tumor$IL_A_Means <- rowMeans(Seq_Tumor[8:9])
+Seq_Tumor$IA_CoV_Means <- rowMeans(Seq_Tumor[10:11])
 ```
 
 ```{r}
-
+seqTumor1 <- Seq_Tumor %>% group_by(Gene.Symbol) %>% count(n=n())
+Seq_tumor1 <- as.data.frame(seqTumor1[,-3])
+colnames(Seq_tumor1)[2] <- 'geneCount'
+Seq_Tumor1 <- merge(Seq_tumor1, Seq_Tumor, by.x='Gene.Symbol', by.y='Gene.Symbol')
 ```
 
 ```{r}
-
+Seq_Tumor1$FoldChange_CoV <- Seq_Tumor1$CoV_Means/Seq_Tumor1$Ctrl_Means
+Seq_Tumor1$FoldChange_IL_a <- Seq_Tumor1$IL_A_Means/Seq_Tumor1$Ctrl_Means
+Seq_Tumor1$FoldChange_IA_CoV <- Seq_Tumor1$IA_CoV_Means/Seq_Tumor1$Ctrl_Means
 ```
 
 ```{r}
+EGFR1 <- grep('^GGAAATC', Seq_Tumor1$SEQUENCE)
+EGFR2 <- grep('^TATCAA',Seq_Tumor1$SEQUENCE)
+EGFR3 <- grep('^AGAACT',Seq_Tumor1$SEQUENCE)
 
+IGF2_1 <- grep('^CTCAACTC',Seq_Tumor1$SEQUENCE)
+IGF2_2 <- grep('^TGCTTCC',Seq_Tumor1$SEQUENCE)
+
+CTNNB1_1 <- grep('^TGATCAA',Seq_Tumor1$SEQUENCE)
+CTNNB1_2 <- grep('^ATGATGGA',Seq_Tumor1$SEQUENCE)
+
+KRAS_1 <- grep('^TCAGGACT',Seq_Tumor1$SEQUENCE)
+KRAS_2 <- grep('^CTGAGTCA',Seq_Tumor1$SEQUENCE)
+
+TP53_1 <- grep('^CTGTGAGG',Seq_Tumor1$SEQUENCE)
+TP53_2 <- grep('^CAGCTACG',Seq_Tumor1$SEQUENCE)
+
+
+Seq_Tumor1$Genotype_Class <- 'class'
+
+Seq_Tumor1$Genotype_Class[EGFR1] <- 'EGFR_1'
+Seq_Tumor1$Genotype_Class[EGFR2] <- 'EGFR_2'
+Seq_Tumor1$Genotype_Class[EGFR3] <- 'EGFR_3'
+Seq_Tumor1$Genotype_Class[IGF2_1] <- 'IGF2_1'
+Seq_Tumor1$Genotype_Class[IGF2_2] <- 'IGF2_2'
+Seq_Tumor1$Genotype_Class[CTNNB1_1] <- 'CTNNB1_1'
+Seq_Tumor1$Genotype_Class[CTNNB1_2] <- 'CTNNB1_2'
+Seq_Tumor1$Genotype_Class[KRAS_1] <- 'KRAS_1'
+Seq_Tumor1$Genotype_Class[KRAS_2] <- 'KRAS_2'
+Seq_Tumor1$Genotype_Class[TP53_1] <- 'TP53_1'
+Seq_Tumor1$Genotype_Class[TP53_2] <- 'TP53_2'
+
+
+```
+
+Make the data tidy.
+```{r}
+tidy_SeqTumor1 <- gather(Seq_Tumor1, 'Statistic','Value',13:19)
+foldChanges <- subset(tidy_SeqTumor1, tidy_SeqTumor1$Statistic=="FoldChange_IL_a" | tidy_SeqTumor1$Statistic=="FoldChange_IA_CoV" | tidy_SeqTumor1$Statistic=="FoldChange_CoV")
 ```
 
 ```{r}
+ggplot(data = foldChanges, aes(x=Statistic, y=Value,fill=Genotype_Class)) +
+  geom_bar(stat='identity', position=position_dodge())+
+  scale_y_continuous()+
+  scale_fill_brewer(palette='Paired') +
+  geom_hline(yintercept=1, linetype="dashed", color = "red")+
+  theme(legend.position="bottom")+
+  ggtitle('Tumorigenesis Gene Values CoV Liver Tumor Samples')+
+  ylab('Values')
 
 ```
+
+***
+The above bar chart shows the fold change values of the tumorigenesis genes in the liver tumor samples inoculated with Coronavirus, Coronavirus and interleukin alpha1, and heat inactive CoV compared to the control group and over a one hour time span in vitro or cell culture. The genes closest to the dashed line represent negligible change. IGF2 genotype 1 of 3 and the 1st genotype of KRAS are negligible for changes after being inoculated with either of the three inoculations over one hour.
+
+The EGFR for two genotypes out of three, both genotypes of TP53, and the second genotype of KRAS are increased as they are above the line in fold change values as the chart above shows.
+
+The genotype of the three for EGFR that isn't increased is decreased in the CoV inoculated samples, but increased in the heat inactivated CoV samples and negligible change in the IL-A mixed with CoV sample. These could be clues to how CoV effects tumor producing genes or the network of genes responsible for causing tumors. However, this study is only done for a one hour time span, not like the blood capillary samples that were done over a 48 hour time span. 
+
+These five tumorigenesis genes are shown in the following table that was made earlier:
+```{r}
+describe
+
+```
+
+***
+
+
 
