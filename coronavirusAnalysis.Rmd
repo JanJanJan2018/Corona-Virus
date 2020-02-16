@@ -3,8 +3,8 @@ title: "Coronavirus Liver and Blood Capillary Samples"
 author: "Janis Corona"
 date: "2/8/2020"
 output:
-  html_document: default
   word_document: default
+  html_document: default
 ---
 
 These samples are the headers added from three Gene Expression Omnibus studies at 
@@ -1150,8 +1150,10 @@ ggplot(data = tidyCBD_48, aes(x=geneClass, y=MeanValue,fill=SampleType)) +
 The above bar chart shows the mean values of the control and CoV inoculated samples after 48 hours in the blood capillary samples. In CoV inoculation, the gene expression values for both PPARG genotypes decrease. In INS, TNF, and PTGS2 there is an up-regulation, and CNR1 shows negligible changes, with a slight decrease in CNR1 gene expression.
 
 ***
+***
 
-Lets look at the tumorigenesis genes and the liver tumor samples that were inoculated with the Coronavirus.
+
+3.) Lets look at the tumorigenesis genes and the liver tumor samples that were inoculated with the Coronavirus.
 
 Get the table with the five genes that were the highest relevance.scoring made earlier to be combined with all our samples. Then select only those liver tumor samples except for the overly scaled samples 1 and 2.Include the heat inactivated CoV and the added IL-alpha1 to CoV samples.
 ```{r}
@@ -1262,6 +1264,222 @@ describe
 ```
 
 ***
+
+We just analyzed the tumorigenesis genes in the liver tumor samples of CoV, but lets look at the blood capillary samples as well to see how these genotypes behave. Are the genes expressed the same or do they differ when looking at blood capillary tissue instead of liver tumor tissue infected with CoV.
+
+We will use the first four columns and the last one of the Seq_Tumor1 table that has the count of the genes and genotypes in it as well as the corresponding given name by which genotype it was.
+```{r}
+Seq_cap_tg <- Seq_Tumor1[,c(1:4,20)]
+Seq_cap_tg <- Seq_cap_tg[!duplicated(Seq_cap_tg$Genotype_Class),]
+colnames(Seq_cap_tg)
+Seq_cap_tg$Genotype_Class
+```
+
+Now use the Series100 table that has the blood capillary samples by gene name of all genes with gene names and sequence copy variant of each gene.Combine the tumorigenesis table Seq_cap_tg with it.
+```{r}
+tg_genes_bcs <- merge(Seq_cap_tg, Series100509,by.x='SEQUENCE', by.y='SEQUENCE')
+```
+
+Lets take the row means of each subset of samples in our blood capillary samples of CoV by 0, 12,24,36, and 48 hours.
+```{r}
+colnames(tg_genes_bcs)
+```
+
+Add in the row means for each group of CoV or Ctrl over 0,12,24,36, or 48 hours.
+```{r}
+tg_genes_bcs$Mean_0hr_Cov <- rowMeans(tg_genes_bcs[,9:13])
+tg_genes_bcs$Mean_12hr_Cov <- rowMeans(tg_genes_bcs[,19:23])
+tg_genes_bcs$Mean_24hr_Cov <- rowMeans(tg_genes_bcs[,29:33])
+tg_genes_bcs$Mean_36hr_Cov <- rowMeans(tg_genes_bcs[,39:43])
+tg_genes_bcs$Mean_48hr_Cov <- rowMeans(tg_genes_bcs[,49:53])
+
+tg_genes_bcs$Mean_0hr_Ctrl <- rowMeans(tg_genes_bcs[,14:18])
+tg_genes_bcs$Mean_12hr_Ctrl <- rowMeans(tg_genes_bcs[,24:28])
+tg_genes_bcs$Mean_24hr_Ctrl <- rowMeans(tg_genes_bcs[,34:38])
+tg_genes_bcs$Mean_36hr_Ctrl <- rowMeans(tg_genes_bcs[,44:48])
+tg_genes_bcs$Mean_48hr_Ctrl <- rowMeans(tg_genes_bcs[,54:58])
+
+
+```
+
+
+Now, add in the fold change values of the CoV/Ctrl for each of 0,12,24,36, or 48 hours.
+```{r}
+tg_genes_bcs$FC_0hr <- tg_genes_bcs$Mean_0hr_Cov/tg_genes_bcs$Mean_0hr_Ctrl
+tg_genes_bcs$FC_12hr <- tg_genes_bcs$Mean_12hr_Cov/tg_genes_bcs$Mean_12hr_Ctrl
+tg_genes_bcs$FC_24hr <- tg_genes_bcs$Mean_24hr_Cov/tg_genes_bcs$Mean_24hr_Ctrl
+tg_genes_bcs$FC_36hr <- tg_genes_bcs$Mean_36hr_Cov/tg_genes_bcs$Mean_36hr_Ctrl
+tg_genes_bcs$FC_48hr <- tg_genes_bcs$Mean_48hr_Cov/tg_genes_bcs$Mean_48hr_Ctrl
+
+```
+
+Lets look at all the columns of sample and statistical information.
+```{r}
+head(tg_genes_bcs[,1:4])
+```
+
+```{r}
+tail(tg_genes_bcs[,69:73])
+```
+
+Lets use tidyr to gather the fold change columns and mean columns into separate tables to plot.
+```{r}
+bc_fc <- as.data.frame(gather(tg_genes_bcs, 'timeInterval_FCs','FC_Value',69:73))
+bc_means <- as.data.frame(gather(tg_genes_bcs, 'timeInterval_Means', 'MeanValue',59:68))
+```
+
+
+Now, we will plot the blood capillary tumorigenesis genes and their genotypes by fold change (FC) of each time interval and compare to the liver tumor samples of tumorigenesis fold change values.
+```{r}
+ggplot(data = bc_fc, aes(x=timeInterval_FCs, y=FC_Value,fill=Genotype_Class)) +
+  geom_bar(stat='identity', position=position_dodge())+
+  scale_y_continuous()+
+  scale_fill_brewer(palette='Paired') +
+  geom_hline(yintercept=1, linetype="dashed", color = "red")+
+  theme(legend.position="bottom")+
+  ggtitle('Tumorigenesis Gene Values CoV Capillary Samples')+
+  ylab('Fold Change Values')
+
+```
+
+
+
+***
+
+```{r}
+means_0_24 <- subset(bc_means, bc_means$timeInterval_Means=='Mean_0hr_Cov' | 
+                       bc_means$timeInterval_Means=='Mean_0hr_Ctrl' |
+                       bc_means$timeInterval_Means=='Mean_12hr_Cov' |
+                       bc_means$timeInterval_Means=='Mean_12hr_Ctrl' |
+                       bc_means$timeInterval_Means=='Mean_24hr_Cov' |
+                       bc_means$timeInterval_Means=='Mean_24hr_Ctrl' )
+means_0_24_a <- subset(means_0_24, means_0_24$Genotype_Class=='CTNNB1_1' |
+                         means_0_24$Genotype_Class=='CTNNB1_2' |
+                         means_0_24$Genotype_Class=='EGFR_1' |
+                         means_0_24$Genotype_Class=='EGFR_2' |
+                         means_0_24$Genotype_Class=='EGFR_3' )
+ggplot(data = means_0_24_a, aes(x=timeInterval_Means, y=MeanValue,group=Genotype_Class)) +
+  geom_line(aes(color=Genotype_Class))+
+  geom_point()+
+  scale_y_continuous()+
+  scale_fill_brewer(palette="paired") +
+  theme(legend.position="bottom")+
+  ggtitle('Tumorigenesis Gene Values CoV Capillary 0-24 Hours')+
+  ylab('Mean Values')
+
+```
+```{r}
+ggplot(data = means_0_24_a, aes(x=timeInterval_Means, y=MeanValue,fill=Genotype_Class)) +
+  geom_bar(stat='identity', position=position_dodge())+
+  scale_y_continuous()+
+  scale_fill_brewer(palette="paired") +
+  theme(legend.position="bottom")+
+  ggtitle('Tumorigenesis Gene Values CoV Capillary 0-24 Hours')+
+  ylab('Mean Values')
+
+
+```
+
+
+
+```{r}
+means_0_24_b <- subset(means_0_24, means_0_24$Genotype_Class=='IGF2_1' |
+                         means_0_24$Genotype_Class=='IGF2_2' |
+                         means_0_24$Genotype_Class=='TP53_1' |
+                         means_0_24$Genotype_Class=='TP53_2' |
+                         means_0_24$Genotype_Class=='KRAS_1' |
+                         means_0_24$Genotype_Class=='KRAS_2')
+ggplot(data = means_0_24_b, aes(x=timeInterval_Means, y=MeanValue,group=Genotype_Class)) +
+  geom_line(aes(color=Genotype_Class))+
+  geom_point()+
+  scale_y_continuous()+
+  scale_fill_brewer(palette="paired") +
+  theme(legend.position="bottom")+
+  ggtitle('Tumorigenesis Gene Values CoV Capillary 0-24 Hours')+
+  ylab('Mean Values')
+
+```
+
+```{r}
+ggplot(data = means_0_24_b, aes(x=timeInterval_Means, y=MeanValue,fill=Genotype_Class)) +
+  geom_bar(stat='identity', position=position_dodge())+
+  scale_y_continuous()+
+  scale_fill_brewer(palette="paired") +
+  theme(legend.position="bottom")+
+  ggtitle('Tumorigenesis Gene Values CoV Capillary 0-24 Hours')+
+  ylab('Mean Values')
+
+
+```
+
+
+Now look at these genes split up into sets of genotypes and in the next 24 hours from time interval 24-48 hours.
+```{r}
+means_24_48 <- subset(bc_means, bc_means$timeInterval_Means=='Mean_24hr_Cov' | 
+                       bc_means$timeInterval_Means=='Mean_24hr_Ctrl' |
+                       bc_means$timeInterval_Means=='Mean_36hr_Cov' |
+                       bc_means$timeInterval_Means=='Mean_36hr_Ctrl' |
+                       bc_means$timeInterval_Means=='Mean_48hr_Cov' |
+                       bc_means$timeInterval_Means=='Mean_48hr_Ctrl' )
+means_24_48_a <- subset(means_24_48, means_24_48$Genotype_Class=='CTNNB1_1' |
+                         means_24_48$Genotype_Class=='CTNNB1_2' |
+                         means_24_48$Genotype_Class=='EGFR_1' |
+                         means_24_48$Genotype_Class=='EGFR_2' |
+                         means_24_48$Genotype_Class=='EGFR_3' )
+ggplot(data = means_24_48_a, aes(x=timeInterval_Means, y=MeanValue,group=Genotype_Class)) +
+  geom_line(aes(color=Genotype_Class))+
+  geom_point()+
+  scale_y_continuous()+
+  scale_fill_brewer(palette="paired") +
+  theme(legend.position="bottom")+
+  ggtitle('Tumorigenesis Gene Values CoV Capillary 24-48 Hours')+
+  ylab('Mean Values')
+```
+
+```{r}
+ggplot(data = means_24_48_a, aes(x=timeInterval_Means, y=MeanValue,fill=Genotype_Class)) +
+  geom_bar(stat='identity', position=position_dodge())+
+  scale_y_continuous()+
+  scale_fill_brewer(palette="paired") +
+  theme(legend.position="bottom")+
+  ggtitle('Tumorigenesis Gene Values CoV Capillary 24-48 Hours')+
+  ylab('Mean Values')
+
+
+```
+
+
+```{r}
+means_24_48_b <- subset(means_24_48, means_24_48$Genotype_Class=='IGF2_1' |
+                         means_24_48$Genotype_Class=='IGF2_2' |
+                         means_24_48$Genotype_Class=='TP53_1' |
+                         means_24_48$Genotype_Class=='TP53_2' |
+                         means_24_48$Genotype_Class=='KRAS_1' |
+                         means_24_48$Genotype_Class=='KRAS_2')
+ggplot(data = means_0_24_b, aes(x=timeInterval_Means, y=MeanValue,group=Genotype_Class)) +
+  geom_line(aes(color=Genotype_Class))+
+  geom_point()+
+  scale_y_continuous()+
+  scale_fill_brewer(palette="paired") +
+  theme(legend.position="bottom")+
+  ggtitle('Tumorigenesis Gene Values CoV Capillary 24-48 Hours')+
+  ylab('Mean Values')
+
+
+```
+
+```{r}
+ggplot(data = means_24_48_b, aes(x=timeInterval_Means, y=MeanValue,fill=Genotype_Class)) +
+  geom_bar(stat='identity', position=position_dodge())+
+  scale_y_continuous()+
+  scale_fill_brewer(palette="paired") +
+  theme(legend.position="bottom")+
+  ggtitle('Tumorigenesis Gene Values CoV Capillary 24-48 Hours')+
+  ylab('Mean Values')
+
+
+```
+**updated 2/16/2020, analysis to follow as well as the diabetes type 1 and type 2 comparisons**
 
 
 
