@@ -1336,14 +1336,25 @@ ggplot(data = bc_fc, aes(x=timeInterval_FCs, y=FC_Value,fill=Genotype_Class)) +
   scale_y_continuous()+
   scale_fill_brewer(palette='Paired') +
   geom_hline(yintercept=1, linetype="dashed", color = "red")+
+  theme_classic()+
   theme(legend.position="bottom")+
   ggtitle('Tumorigenesis Gene Values CoV Capillary Samples')+
   ylab('Fold Change Values')
 
 ```
 
+The above plot shows the fold changes over 48 hours for the blood capillary samples inoculated with CoV. At zero hours after inoculation the fold change values are negligible. 
 
+After 12 hours of being infected with CoV, the 2nd and 3rd genotypes of EGFR are increased as well as the 2nd genotype of IGF2. The TP53, CTNNB1, and KRAS genotypes as well as the 1st genotype of EGFR are decreased after 12 hours. 
 
+After one day or 24 hours, both genotypes of EGFR that were increased after 12 hours are still increased. The 2nd genotype of IGF2 dropped back down to original values, and all other genotypes are decreased. The first genotype of IGF2 decreased more than after 12 hours. The first genotype of CTNNB1 and TP57 increased slightly more than after 12 hours but still less than original values. 
+
+After 36 hours, all the EGFR genotypes increase, with a huge increase in the first genotype of EGFR that was originally decreased after 12 and 24 hours. The CTNNB1 genes remain the same approximate values as they were at 24 hours after inoculation.
+
+After 48 hours, only the EGFR gene is increased with all genotypes increased more than after 0 hours. The first genotype of EGFR that was decreased in the 0,12,and 24 hour samples has now surpassed gene expression values of all the other genotypes as the most expressed genotype in this set of genes.
+
+***
+This type of tissue, blood capillary, when compared to liver tumor tissue, did not show the same genes and behaviors as each other. The TP53 genotypes never increased as it did in the liver tumor samples. The CNNTD1 genotypes were increased in the liver tumor samples as well as all the other genotypes except for the first genotypes of KRAS and EGFR. These blood capillary samples show 48 hours of results in 12 hour increments, offering more information on gene expression of the tumorigenesis genes after two days. 
 ***
 
 ```{r}
@@ -1368,11 +1379,18 @@ ggplot(data = means_0_24_a, aes(x=timeInterval_Means, y=MeanValue,group=Genotype
   ylab('Mean Values')
 
 ```
+
+***
+The above line chart shows the direction of increase or decrease over 24 hours at the mean gene expression values of the CTNBB1 and EGFR genotypes.The CTNNB1 genotypes decrease, while most of the EGFR genotypes increase when compared to the control samples at the same time.
+
+***
+
 ```{r}
 ggplot(data = means_0_24_a, aes(x=timeInterval_Means, y=MeanValue,fill=Genotype_Class)) +
   geom_bar(stat='identity', position=position_dodge())+
   scale_y_continuous()+
   scale_fill_brewer(palette="paired") +
+  theme_dark()+
   theme(legend.position="bottom")+
   ggtitle('Tumorigenesis Gene Values CoV Capillary 0-24 Hours')+
   ylab('Mean Values')
@@ -1380,6 +1398,10 @@ ggplot(data = means_0_24_a, aes(x=timeInterval_Means, y=MeanValue,fill=Genotype_
 
 ```
 
+***
+The above bar chart shows the first 24 hours after inoculation for the genotypes of the CTNNB1 an EGFR genes. CTNNB1 has decreasing values and the EGFR genotypes are increased over 24 hours time.
+
+***
 
 
 ```{r}
@@ -1400,11 +1422,17 @@ ggplot(data = means_0_24_b, aes(x=timeInterval_Means, y=MeanValue,group=Genotype
 
 ```
 
+***
+The above plot shows the line of direction for increasing and decreasing gene expression values by genotype for IGF2, KRAS, and TP53 over 24 hours.
+
+***
+
 ```{r}
 ggplot(data = means_0_24_b, aes(x=timeInterval_Means, y=MeanValue,fill=Genotype_Class)) +
   geom_bar(stat='identity', position=position_dodge())+
   scale_y_continuous()+
   scale_fill_brewer(palette="paired") +
+  theme_dark()+
   theme(legend.position="bottom")+
   ggtitle('Tumorigenesis Gene Values CoV Capillary 0-24 Hours')+
   ylab('Mean Values')
@@ -1412,6 +1440,10 @@ ggplot(data = means_0_24_b, aes(x=timeInterval_Means, y=MeanValue,fill=Genotype_
 
 ```
 
+***
+The above chart shows the 0-24 hour time window of genotype mean expression values for the IGF2, KRAS, and TP53 genes. Start at the mean ctrl values for the hour compared to the CoV sample Means and notice the changes. At zero hours, negligible change. At 12 hours, a decrease in the KRAS and TP53 genotypes, with a slight increase or no noticeable change in the IGF2 genotypes. And after 24 hours all these genotypes decrease in expression values.
+
+***
 
 Now look at these genes split up into sets of genotypes and in the next 24 hours from time interval 24-48 hours.
 ```{r}
@@ -1436,17 +1468,26 @@ ggplot(data = means_24_48_a, aes(x=timeInterval_Means, y=MeanValue,group=Genotyp
   ylab('Mean Values')
 ```
 
+***
+The above line chart shows the increasing and decreasing directions of the genotypes of CTNNB1 and EGFR genes from 24-48 hours. The CTNNB1 genotypes decreased throughout this time interval compared to the control group. The EGFR genotypes all increased except for the first genotype that decreased after 24 hours but increased the remaining time intervals compared to the control groups.
+
+***
+
 ```{r}
 ggplot(data = means_24_48_a, aes(x=timeInterval_Means, y=MeanValue,fill=Genotype_Class)) +
   geom_bar(stat='identity', position=position_dodge())+
   scale_y_continuous()+
-  scale_fill_brewer(palette="paired") +
+  scale_fill_brewer(palette="PuOr") +
+  theme_dark()+
   theme(legend.position="bottom")+
   ggtitle('Tumorigenesis Gene Values CoV Capillary 24-48 Hours')+
   ylab('Mean Values')
 
 
 ```
+
+***
+The above bar chart shows the time interval of 24-48 hours after being infected with the Coronavirus for the genotypes of CTNNB1 and EGFR. We can see there is decreased expression after 24 hours in the CTNNB1 genotypes as well as for the other time intervals through 48 hours while almost at the same levels after 48 hours. For the EGFR genotypes, they increased for all times from 24-48 hours. Except for the 24 hour time interval where the first genotype of EGFR decreased.
 
 
 ```{r}
@@ -1456,30 +1497,43 @@ means_24_48_b <- subset(means_24_48, means_24_48$Genotype_Class=='IGF2_1' |
                          means_24_48$Genotype_Class=='TP53_2' |
                          means_24_48$Genotype_Class=='KRAS_1' |
                          means_24_48$Genotype_Class=='KRAS_2')
-ggplot(data = means_0_24_b, aes(x=timeInterval_Means, y=MeanValue,group=Genotype_Class)) +
+ggplot(data = means_24_48_b, aes(x=timeInterval_Means, y=MeanValue,group=Genotype_Class)) +
   geom_line(aes(color=Genotype_Class))+
   geom_point()+
   scale_y_continuous()+
-  scale_fill_brewer(palette="paired") +
+  scale_fill_brewer(palette="Spectral") +
   theme(legend.position="bottom")+
   ggtitle('Tumorigenesis Gene Values CoV Capillary 24-48 Hours')+
   ylab('Mean Values')
 
 
 ```
+
+***
+The above line chart shows how the CoV and control gene expression values behave for three of the genes out of five tumorigenesis genes selected for the time interval of 24-48 hours.From each sample, you can see at 24 hours all these genotypes were less than the control gene values, so they decreased. And the same for the 36 hour interval, and the 48 hour interval. 
+***
 
 ```{r}
 ggplot(data = means_24_48_b, aes(x=timeInterval_Means, y=MeanValue,fill=Genotype_Class)) +
   geom_bar(stat='identity', position=position_dodge())+
   scale_y_continuous()+
-  scale_fill_brewer(palette="paired") +
+  scale_fill_brewer(palette="PuOr") +
+  theme_dark()+
   theme(legend.position="bottom")+
   ggtitle('Tumorigenesis Gene Values CoV Capillary 24-48 Hours')+
   ylab('Mean Values')
 
 
 ```
-**updated 2/16/2020, analysis to follow as well as the diabetes type 1 and type 2 comparisons**
 
+***
+The above bar chart shows the genotypes of IGF2, KRAS, and TP53 for the Coronavirus and control mean values from 24 hours to 48 hours time. The 2nd genotype of IGF2 seems to stay around the same value, while all the other genotypes have decreased expression values compared to the control set of samples for the corresponding time interval.
 
+***
+
+The liver tumor samples showed increases in all genes except the first genotypes of EGFR and IGF2 over a one hour time span.While the blood capillary samples, showed decreases in all genes after 48 hours, except for the EGFR genotypes. And the genotype of EGFR the most expressed was the same one found under expressed in earlier time intervals and the liver tumor samples.
+
+The information offers some clues of how these genes are affected by the CoV inoculation and the window of changes in two different sample types. 
+
+**updated 2/16/2020**
 
